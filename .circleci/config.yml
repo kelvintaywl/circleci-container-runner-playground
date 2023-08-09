@@ -1,0 +1,42 @@
+version: 2.1
+
+executors:
+  my-runner:
+    docker:
+      - image: cimg/base:current
+    resource_class: kelvintaywl/cntr-runr-from-tf
+  deploy-base:
+    docker:
+      - image: cimg/aws:2023.08
+    resource_class: medium
+
+jobs:
+  build-artifacts:
+    executor: my-runner
+    steps:
+      - run:
+          name: Build assets
+          command: |
+            # NOTE: this creates a dummy / arbitary file
+            # for demonstration purpose
+            head -c 5242880 </dev/urandom > 5mb_file.txt
+      - persist_to_workspace:
+          root: .
+          paths:
+            - 5mb_file.txt
+  deploy:
+    executor: deploy-base
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: inspect artifacts
+          command: ls -lah 5mb_file.txt
+
+workflows:
+  version: 2
+  jobs:
+    - build-artifacts
+    - deploy:
+        requires:
+          - build-artifacts
